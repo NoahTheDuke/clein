@@ -7,7 +7,6 @@
 (ns ^:no-doc noahtheduke.clein
   (:require
    [babashka.process :refer [shell]]
-   [babashka.process.pprint]
    [clojure.java.io :as io]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
@@ -17,7 +16,8 @@
 
 #?(:bb (do (require '[babashka.deps :as deps])
            (deps/add-deps '{:deps {io.github.babashka/tools.bbuild
-                                   {:git/sha "f5a4acaf25ec2bc5582853758ba81383fff5e86b"}}})))
+                                   {:git/sha "f5a4acaf25ec2bc5582853758ba81383fff5e86b"}}}))
+   :clj (require '[babashka.process.pprint]))
 
 (require '[clojure.tools.build.api :as b])
 
