@@ -1,0 +1,2 @@
+{:cljc {:features #{:clj}}
+ :output {:linter-name true}}
