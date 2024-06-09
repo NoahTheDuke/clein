@@ -171,6 +171,7 @@
 (defn deploy [opts]
   (clean opts)
   (b/write-pom opts)
+  (copy-src opts)
   (b/jar opts)
   (let [deploy-alias
         {:aliases

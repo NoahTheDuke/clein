@@ -14,7 +14,7 @@ In your `deps.edn`, add this library to a new alias such as `:build`:
           :main-opts ["-m" "noahtheduke.clein"]}}
 ```
 
-Run with `clojure -M:build`.
+Run with `clojure -M:build [...]`.
 
 ### Babashka
 
@@ -30,9 +30,9 @@ details all possible options with their defaults:
 {:aliases
  {...
   :clein/build
-  {:lib io.github.noahtheduke/splint ; required
-   :main noahtheduke.splint ; required only if building an uberjar
-   :url "https://github.com/noahtheduke/splint" ; required
+  {:lib io.github.noahtheduke/clein ; required
+   :main noahtheduke.clein ; required only if building an uberjar
+   :url "https://github.com/noahtheduke/clein" ; required
 
    ; :version is required
    ; Must be either a string, or a path string that resolves to a file:
@@ -57,8 +57,8 @@ details all possible options with their defaults:
    ; :target/:jar-name and :target/:uberjar-name, respectively.
    :target-path "target"
 
-   :jar-name "splint.jar" ; optional, default (format "%s-%s.jar" (name lib) version)
-   :uberjar-name "splint-standalone.jar" ; optional, default (format "%s-%s-standalone.jar" (name lib) version)
+   :jar-name "clein.jar" ; optional, default (format "%s-%s.jar" (name lib) version)
+   :uberjar-name "clein-standalone.jar" ; optional, default (format "%s-%s-standalone.jar" (name lib) version)
 
    ; :scm is optional
    ; If not included, defaults to above :url and :version, no :connection or :developerConnection
