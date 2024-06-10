@@ -162,6 +162,7 @@
 
 (defn compile-java [opts]
   (when (:java-src-dirs opts)
+    (println "Compiling" (str/join ", " (:java-src-dirs opts)))
     (b/javac {:src-dirs (:java-src-dirs opts)
               :class-dir (:class-dir opts)
               :basis (:basis opts)
@@ -175,9 +176,6 @@
   (println "Created" (str (.getAbsoluteFile (io/file (:jar-file opts))))))
 
 (defn create-uberjar [opts]
-  (when-not (:main opts)
-    (println "Must specify a :main to build an uberjar")
-    (System/exit 1))
   (clean opts)
   (copy-src opts)
   (println "Compiling" (:lib opts))
@@ -189,8 +187,9 @@
 
 (defn deploy [opts]
   (clean opts)
-  (b/write-pom opts)
   (copy-src opts)
+  (compile-java opts)
+  (b/write-pom opts)
   (b/jar opts)
   (let [deploy-alias
         {:aliases
