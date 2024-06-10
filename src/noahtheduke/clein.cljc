@@ -65,30 +65,30 @@
 
 ;; required
 (s/def ::lib qualified-symbol?)
+(s/def ::main simple-symbol?)
+(s/def ::url string?)
 
 (s/def :v/string string?)
 (s/def :v/file #(when (string? %)
                   (let [f (io/file %)]
                     (and (.exists f) (.isFile f)))))
 (s/def ::version (s/or :f :v/file :s :v/string))
-(s/def ::url string?)
 
 (s/def :l/name string?)
 (s/def :l/url string?)
 (s/def :l/distribution #{:repo :manual})
 (s/def :l/comments string?)
-(s/def :l/license (s/keys :req-un [:l/name :l/url]
-                           :opt-un [:l/distribution :l/comments]))
-(s/def :l/licenses (s/coll-of :l/license))
-(s/def ::license (s/or :license :l/license
-                       :licenses :l/licenses))
+(s/def ::license (s/keys :req-un [:l/name :l/url]
+                         :opt-un [:l/distribution :l/comments]))
+(s/def ::pom-data vector?)
 
 ;; optional
-(s/def ::main simple-symbol?)
 (s/def ::jar-name string?)
 (s/def ::uberjar-name string?)
-(s/def ::target-path string?)
-(s/def ::src-paths (s/coll-of string? :into []))
+(s/def ::src-dirs (s/coll-of string? :into []))
+(s/def ::java-src-dirs (s/coll-of string? :into []))
+(s/def ::javac-opts (s/coll-of string? :into []))
+(s/def ::target-dir string?)
 
 (s/def :scm/url string?)
 (s/def :scm/connection string?)
@@ -97,20 +97,29 @@
 (s/def ::scm (s/keys :req-un [:scm/url :scm/tag]
                      :opt-un [:scm/connection :scm/developerConnection]))
 
-(s/def ::build-opts (s/keys :req-un [::lib ::license ::version ::url]
-                            :opt-un [::main ::jar-name ::uberjar-name
-                                     ::target-path ::src-paths ::scm]))
+(s/def ::build-opts (s/keys :req-un [::lib ::main ::version ::url]
+                            :opt-un [::license ::pom-data
+                                     ::jar-name ::uberjar-name
+                                     ::src-dirs ::java-src-dirs
+                                     ::javac-opts ::target-dir ::scm]))
 
 (defn build-pom-data [opts]
-  [(->> (for [license (:license opts)]
+  (assert (or (contains? opts :license)
+              (contains? opts :pom-data))
+          "Must specify ONE of :license OR :pom-data")
+  (assert (not (and (contains? opts :license)
+                    (contains? opts :pom-data)))
+          "Must only specify :license OR :pom-data")
+  (or (:pom-data opts)
+      (let [license (:license opts)]
+        [:licenses
          [:license
           [:name (:name license)]
           [:url (:url license)]
           (when (:distribution license)
             [:distribution (name (:distribution license))])
           (when (:comments license)
-            [:comments (:comments license)])])
-       (into [:licenses]))])
+            [:comments (:comments license)])]])))
 
 (defn clein-build-opts []
   (let [build-opts (:argmap (b/create-basis {:aliases [:clein/build]}))
@@ -125,34 +134,43 @@
           (System/exit 1))
       :else
       (as-> conformed $
-        ; conform
-        (update $ :license #(if (= :license (key %)) [(val %)] (val %)))
-        (update $ :version #(if (= :s (key %)) (val %) (str/trim (slurp (val %)))))
-        ; defaults
+        (update $ :version #(if (= :s (key %))
+                              (str/replace (val %) "{{git-count-revs}}" (b/git-count-revs nil))
+                              (str/trim (slurp (val %)))))
         (assoc $ :basis (b/create-basis {:project "deps.edn"}))
-        (update $ :src-paths #(or (not-empty %) (:paths (:basis $))))
-        (update $ :target-path #(or % "target"))
-        (assoc $ :class-dir (str (io/file (:target-path $) "classes")))
+        (update $ :src-dirs #(or (not-empty %) (:paths (:basis $))))
+        (update $ :java-src-dirs not-empty)
+        (update $ :javac-options not-empty)
+        (update $ :target-dir #(or % "target"))
+        (assoc $ :class-dir (str (io/file (:target-dir $) "classes")))
         (update $ :scm #(merge {:url (:url $)
-                                :tag (:version $)} %))
+                                :tag (str "v" (:version $))} %))
         (assoc $ :src-pom nil)
         (assoc $ :pom-data (build-pom-data $))
         (update $ :jar-name #(or % (format "%s-%s.jar" (name (:lib $)) (:version $))))
-        (assoc $ :jar-file (str (io/file (:target-path $) (:jar-name $))))
+        (assoc $ :jar-file (str (io/file (:target-dir $) (:jar-name $))))
         (update $ :uberjar-name #(or % (format "%s-%s-standalone.jar" (name (:lib $)) (:version $))))
-        (assoc $ :uber-file (str (io/file (:target-path $) (:uberjar-name $))))
+        (assoc $ :uber-file (str (io/file (:target-dir $) (:uberjar-name $))))
         (assoc $ :basis (b/create-basis {}))))))
 
 (defn clean [opts]
   (b/delete {:path (:class-dir opts)}))
 
 (defn copy-src [opts]
-  (b/copy-dir {:src-dirs (:src-paths opts)
+  (b/copy-dir {:src-dirs (:src-dirs opts)
                :target-dir (:class-dir opts)}))
+
+(defn compile-java [opts]
+  (when (:java-src-dirs opts)
+    (b/javac {:src-dirs (:java-src-dirs opts)
+              :class-dir (:class-dir opts)
+              :basis (:basis opts)
+              :javac-opts (:javac-opts opts)})))
 
 (defn create-jar [opts]
   (clean opts)
   (copy-src opts)
+  (compile-java opts)
   (b/jar opts)
   (println "Created" (str (.getAbsoluteFile (io/file (:jar-file opts))))))
 
@@ -164,6 +182,7 @@
   (copy-src opts)
   (println "Compiling" (:lib opts))
   (b/compile-clj opts)
+  (compile-java opts)
   (b/write-pom opts)
   (b/uber opts)
   (println "Created" (str (.getAbsoluteFile (io/file (:uber-file opts))))))

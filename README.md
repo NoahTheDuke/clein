@@ -31,37 +31,59 @@ details all possible options with their defaults:
  {...
   :clein/build
   {:lib io.github.noahtheduke/clein ; required
-   :main noahtheduke.clein ; required only if building an uberjar
+   :main noahtheduke.clein ; required
    :url "https://github.com/noahtheduke/clein" ; required
 
    ; :version is required
-   ; Must be either a string, or a path string that resolves to a file:
-   ; :version "resources/CLEIN_VERSION"
+   ; Must be either a string, or a path string that resolves to a file.
+   ; If given a string, it can contain the string "{{git-count-revs}}"
+   ; to use the result of `b/git-count-revs`. No other template strings work.
    :version "1.0.0"
+   ; :version "1.0.{{git-count-revs}}"
+   ; :version "resources/CLEIN_VERSION".
 
-   ; :license is required
-   ; Only allows :name, :url, :distribution, :comments.
+   ; :license OR :pom-data are required, but not both.
+
+   ; :license only allows :name, :url, :distribution, :comments.
    ; :name and :url and required, :distribution and :comments are optional.
    ; If not included, defaults to :distribution :repo, no :comments.
    :license {:name "MPL-2.0"
              :url "https://mozilla.org/MPL/2.0"}
 
-   ; :src-paths is optional
+   ; :pom-data is checked to be a vector and is otherwise passed directly
+   ; to b/write-pom.
+   :pom-data [[:licenses
+               [:license
+                [:name "MPL-2.0"]
+                [:url "https://mozilla.org/MPL/2.0"]
+                [:distribution "repo"]]]]
+
+   ; :src-dirs is optional
    ; If not included, defaults to :paths in deps.edn.
    ; :paths should include any "resources" paths you want as well.
-   :src-paths ["src"]
+   :src-dirs ["src/clojure"]
 
-   ; :target is optional
+   ; :java-src-dirs is optional
+   ; If not included, defaults to nil and no java compilation will happen.
+   ; If included, the given directories will be compiled before jars are created.
+   ; Java classes are compiled into :target/classes as below.
+   :java-src-dirs ["src/java"]
+
+   ; :javac-opts is optional
+   ; If included, it will be passed to b/javac as-is.
+   :javac-opts ["--release" "11"]
+
+   ; :target-dir is optional
    ; If not included, defaults to "target".
-   ; Classes are compiled into :target/classes, and jar and uberjar are built in
-   ; :target/:jar-name and :target/:uberjar-name, respectively.
-   :target-path "target"
+   ; Classes are compiled into :target-dir/classes, and jar and uberjar are built in
+   ; :target-dir/:jar-name and :target-dir/:uberjar-name, respectively.
+   :target-dir "target"
 
    :jar-name "clein.jar" ; optional, default (format "%s-%s.jar" (name lib) version)
    :uberjar-name "clein-standalone.jar" ; optional, default (format "%s-%s-standalone.jar" (name lib) version)
 
    ; :scm is optional
-   ; If not included, defaults to above :url and :version, no :connection or :developerConnection
+   ; If not included, defaults to above :url and (str "v" :version), no :connection or :developerConnection
    ; Only allows :url, :connection, :developerConnection, :tag
    :scm {:url "https://github.com/noahtheduke/clein"
          :tag "v1.0.0"}}}}
