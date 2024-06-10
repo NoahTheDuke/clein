@@ -17,4 +17,6 @@
                 :version "resources/CLEIN_VERSION"
                 :url "https://github.com/noahtheduke/clein"
                 :license {:name "MPL-2.0"
-                          :url "https://mozilla.org/MPL/2.0"}}}}
+                          :url "https://mozilla.org/MPL/2.0"}}
+  :prep {:deps {io.github.clojure/tools.build {:mvn/version "0.10.3"}}
+         :ns-default prep}}}

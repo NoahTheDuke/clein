@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.2.0
+
+Still very rough, maaaaaaybe don't use lol.
+
 - Added `{{git-count-revs}}` as a template string for use in `:version`. (See [#1](https://github.com/NoahTheDuke/clein/issues/1))
 - Changed `:src-paths` to `:src-dirs` to align with tools.build.
 - Changed `:target-path` to `:target-dir` to match `:src-paths`.

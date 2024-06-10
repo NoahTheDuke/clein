@@ -112,14 +112,14 @@
           "Must only specify :license OR :pom-data")
   (or (:pom-data opts)
       (let [license (:license opts)]
-        [:licenses
-         [:license
-          [:name (:name license)]
-          [:url (:url license)]
-          (when (:distribution license)
-            [:distribution (name (:distribution license))])
-          (when (:comments license)
-            [:comments (:comments license)])]])))
+        [[:licenses
+          [:license
+           [:name (:name license)]
+           [:url (:url license)]
+           (when (:distribution license)
+             [:distribution (name (:distribution license))])
+           (when (:comments license)
+             [:comments (:comments license)])]]])))
 
 (defn clein-build-opts []
   (let [build-opts (:argmap (b/create-basis {:aliases [:clein/build]}))
