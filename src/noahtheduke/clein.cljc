@@ -22,7 +22,8 @@
 (require '[clojure.tools.build.api :as b])
 
 (def cli-options
-  [["-h" "--help" "Shows this help"]])
+  [[nil "--snapshot" "Append -SNAPSHOT to the version"]
+   ["-h" "--help" "Shows this help"]])
 
 (defn help-message
   [specs]
@@ -121,7 +122,7 @@
            (when (:comments license)
              [:comments (:comments license)])]]])))
 
-(defn clein-build-opts []
+(defn clein-build-opts [options]
   (let [build-opts (:argmap (b/create-basis {:aliases [:clein/build]}))
         conformed (s/conform ::build-opts build-opts)]
     (cond
@@ -134,9 +135,11 @@
           (System/exit 1))
       :else
       (as-> conformed $
-        (update $ :version #(if (= :s (key %))
-                              (str/replace (val %) "{{git-count-revs}}" (b/git-count-revs nil))
-                              (str/trim (slurp (val %)))))
+        (update $ :version #(str (if (= :s (key %))
+                                   (str/replace (val %) "{{git-count-revs}}" (b/git-count-revs nil))
+                                   (str/trim (slurp (val %))))
+                                 (when (:snapshot options)
+                                   "-SNAPSHOT")))
         (assoc $ :basis (b/create-basis {:project "deps.edn"}))
         (update $ :src-dirs #(or (not-empty %) (:paths (:basis $))))
         (update $ :java-src-dirs not-empty)
@@ -208,8 +211,8 @@
            (System/exit 1)))))
 
 (defn -main [& args]
-  (let [build-opts (clein-build-opts)
-        {:keys [action exit-message ok]} (validate-opts args)]
+  (let [{:keys [action exit-message ok options]} (validate-opts args)
+        build-opts (clein-build-opts options)]
     (when exit-message
       (println exit-message))
     (case action
