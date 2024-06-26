@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 - `--snapshot` allows for building and deploying a jar with version `-SNAPSHOT`.
+- Include `:provided` alias.
 
 ## 0.2.0
 

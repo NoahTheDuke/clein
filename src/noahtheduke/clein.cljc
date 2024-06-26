@@ -10,9 +10,9 @@
    [clojure.java.io :as io]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
-   [clojure.tools.cli :as cli]) 
+   [clojure.tools.cli :as cli])
   (:import
-    [java.lang System]))
+   [java.lang System]))
 
 #?(:bb (do (require '[babashka.deps :as deps])
            (deps/add-deps '{:deps {io.github.babashka/tools.bbuild
@@ -135,12 +135,13 @@
           (System/exit 1))
       :else
       (as-> conformed $
+        (assoc $ :basis (b/create-basis {:project "deps.edn"
+                                         :aliases [:provided]}))
         (update $ :version #(str (if (= :s (key %))
                                    (str/replace (val %) "{{git-count-revs}}" (b/git-count-revs nil))
                                    (str/trim (slurp (val %))))
                                  (when (:snapshot options)
                                    "-SNAPSHOT")))
-        (assoc $ :basis (b/create-basis {:project "deps.edn"}))
         (update $ :src-dirs #(or (not-empty %) (:paths (:basis $))))
         (update $ :java-src-dirs not-empty)
         (update $ :javac-options not-empty)
@@ -153,8 +154,7 @@
         (update $ :jar-name #(or % (format "%s-%s.jar" (name (:lib $)) (:version $))))
         (assoc $ :jar-file (str (io/file (:target-dir $) (:jar-name $))))
         (update $ :uberjar-name #(or % (format "%s-%s-standalone.jar" (name (:lib $)) (:version $))))
-        (assoc $ :uber-file (str (io/file (:target-dir $) (:uberjar-name $))))
-        (assoc $ :basis (b/create-basis {}))))))
+        (assoc $ :uber-file (str (io/file (:target-dir $) (:uberjar-name $))))))))
 
 (defn clean [opts]
   (b/delete {:path (:class-dir opts)}))
@@ -175,6 +175,7 @@
   (clean opts)
   (copy-src opts)
   (compile-java opts)
+  (b/write-pom opts)
   (b/jar opts)
   (println "Created" (str (.getAbsoluteFile (io/file (:jar-file opts))))))
 

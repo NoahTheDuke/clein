@@ -6,15 +6,15 @@ Build and deploy your projects with ease! (But only if they're not too complicat
 
 ### Deps.edn
 
-In your `deps.edn`, add this library to a new alias such as `:build`:
+In your `deps.edn`, add this library to a new alias such as `:clein`:
 
 ```clojure
 {:aliases
- {:build {:deps {io.github.noahtheduke/clein {:mvn/version "LATEST"}}
+ {:clein {:deps {io.github.noahtheduke/clein {:mvn/version "LATEST"}}
           :main-opts ["-m" "noahtheduke.clein"]}}
 ```
 
-Run with `clojure -M:build [...]`.
+Run with `clojure -M:clein [...]`.
 
 ### Babashka
 
@@ -88,6 +88,10 @@ details all possible options with their defaults:
    :scm {:url "https://github.com/noahtheduke/clein"
          :tag "v1.0.0"}}}}
 ```
+
+Additionally, if there is a `:provided` alias, it will be included when building the
+basis for the jar, uberjar, and deploying. This allows specifying `:extra-deps` that
+users must include themselves, generally for optional dependencies.
 
 ## Rationale
 
