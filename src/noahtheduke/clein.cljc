@@ -21,49 +21,6 @@
 
 (require '[clojure.tools.build.api :as b])
 
-(def cli-options
-  [[nil "--snapshot" "Append -SNAPSHOT to the version"]
-   ["-h" "--help" "Shows this help"]])
-
-(defn help-message
-  [specs]
-  (let [lines ["clein v1.0"
-               ""
-               "Usage: splint [options] action"
-               ""
-               "Options:"
-               (cli/summarize specs)
-               ""
-               "Actions:"
-               "  clean    Clean the target directory"
-               "  jar      Build the jar"
-               "  uberjar  Build the uberjar"
-               "  deploy   Deploy to Clojars"
-               ; "  repl     Open a repl"
-               ""]]
-    {:exit-message (str/join \newline lines)
-     :ok true}))
-
-(defn print-errors
-  [errors]
-  {:exit-message (str/join \newline (cons "clein errors:" errors))
-   :ok false})
-
-(defn validate-opts
-  [args]
-  (let [{:keys [arguments options errors summary]}
-        (cli/parse-opts args cli-options :strict true :summary-fn identity)]
-    (cond
-      (:help options) (help-message summary)
-      errors (print-errors errors)
-      (and (= 1 (count arguments))
-           (#{"jar" "uberjar" "repl" "deploy"} (first arguments)))
-      {:action (first arguments)
-       :ok true
-       :options options}
-      :else
-      (help-message summary))))
-
 ;; required
 (s/def ::lib qualified-symbol?)
 (s/def ::main simple-symbol?)
@@ -175,7 +132,6 @@
   (clean opts)
   (copy-src opts)
   (compile-java opts)
-  (b/write-pom opts)
   (b/jar opts)
   (println "Created" (str (.getAbsoluteFile (io/file (:jar-file opts))))))
 
@@ -211,17 +167,112 @@
          (catch clojure.lang.ExceptionInfo _
            (System/exit 1)))))
 
+(def cli-options
+  [[nil "--snapshot" "Append -SNAPSHOT to the version"]
+   ["-h" "--help" "Shows this help"]])
+
+(def cli-subcommands
+  [["clean" "Clean the target directory"
+    :action #'clean]
+   ["jar" "Build the jar"
+    :action #'create-jar]
+   ["uberjar" "Built the uberjar"
+    :action #'create-uberjar]
+   ["deploy" "Build a jar and deploy it to Clojars"
+    :action #'deploy]
+   #_["repl" "Open a repl"
+    :action repl]])
+
+(defn make-cmd-summary-part
+  [spec]
+  [(:name spec) (or (:desc spec) "")])
+
+(defn summarize-subcommands
+  [specs]
+  (if (seq specs)
+    (let [parts (map make-cmd-summary-part specs)
+          lens (apply map (fn [& cols] (apply max (map count cols))) parts)
+          lines (cli/format-lines lens parts)]
+      (str/join \newline lines))
+    ""))
+
+(defn- compile-subcommand-specs
+  "Modified from clojure.tools.cli/compile-option-specs"
+  [arguments]
+  {:post [(every? :id %)
+          (every? (comp seq :name) %)
+          (every? (comp ifn? :action) %)
+          (apply distinct? (or (seq (map :id %)) [true]))]}
+  (map (fn [spec]
+         (let [sopt-lopt-desc (take-while string? spec)
+               spec-map (apply hash-map (drop (count sopt-lopt-desc) spec))
+               [opt-name desc] sopt-lopt-desc]
+           (merge {:id (keyword opt-name)
+                   :name opt-name
+                   :desc desc}
+                  spec-map)))
+       arguments))
+
+(defn verify-cmd
+  [specs cmd-arg]
+  (if-let [cmd (some #(when (= cmd-arg (:name %)) %) specs)]
+    [cmd nil]
+    [nil [(str "Unknown command: " (pr-str cmd-arg))]]))
+
+(defn parse-subcommand
+  "Inspired by clojure.tools.cli/parse-opts"
+  [[cmd-arg & args] subcommand-specs & {:keys [summary-fn]}]
+  (let [specs (compile-subcommand-specs subcommand-specs)
+        [cmd errors] (verify-cmd specs cmd-arg)]
+    {:cmd-command cmd
+     :cmd-summary ((or summary-fn summarize-subcommands) specs)
+     :cmd-args args
+     :cmd-errors errors}))
+
+(defn help-message
+  [specs cmd-specs]
+  (let [lines ["clein v1.0"
+               ""
+               "Usage: clein [options] action"
+               ""
+               "Options:"
+               (cli/summarize specs)
+               ""
+               "Actions:"
+               (summarize-subcommands cmd-specs)
+               ""]]
+    {:exit-message (str/join \newline lines)
+     :ok true}))
+
+(defn print-errors
+  [errors]
+  {:exit-message (str/join \newline (cons "clein errors:" errors))
+   :ok false})
+
+(defn validate-args
+  [args]
+  (let [{:keys [arguments options errors] specs :summary :as opts}
+        (cli/parse-opts args cli-options :strict true :in-order true :summary-fn identity)
+        {:keys [cmd-command cmd-summary cmd-errors cmd-args] :as cmds}
+        (parse-subcommand arguments cli-subcommands :summary-fn identity)
+        errors (seq (concat errors cmd-errors))]
+    (cond
+      (:help options) (help-message specs cmd-summary)
+      errors (print-errors errors)
+      cmd-command
+      {:command cmd-command
+       :ok true
+       :options options
+       :args cmd-args}
+      :else (help-message specs cmd-summary))))
+
 (defn -main [& args]
-  (let [{:keys [action exit-message ok options]} (validate-opts args)
+  (let [{:keys [command exit-message ok options]} (validate-args args)
         build-opts (clein-build-opts options)]
     (when exit-message
       (println exit-message))
-    (case action
-      "clean" (clean build-opts)
-      "jar" (create-jar build-opts)
-      "uberjar" (create-uberjar build-opts)
-      "deploy" (deploy build-opts)
-      #_:else nil)
+    (when command
+      ((:action command) build-opts))
     (System/exit (if ok 0 1))))
 
 (when (= *file* (System/getProperty "babashka.file"))

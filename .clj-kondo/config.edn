@@ -1,2 +1,3 @@
 {:cljc {:features #{:clj}}
+ :linters {:unused-binding {:exclude-destructured-as true}}
  :output {:linter-name true}}
