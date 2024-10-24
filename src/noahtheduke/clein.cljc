@@ -167,21 +167,29 @@
          (catch clojure.lang.ExceptionInfo _
            (System/exit 1)))))
 
+(defn install [opts]
+  (clean opts)
+  (copy-src opts)
+  (compile-java opts)
+  (b/jar opts)
+  (b/install opts)
+  (println "Installed" (:jar-name opts)))
+
 (def cli-options
   [[nil "--snapshot" "Append -SNAPSHOT to the version"]
    ["-h" "--help" "Shows this help"]])
 
 (def cli-subcommands
   [["clean" "Clean the target directory"
-    :action #'clean]
+    :action clean]
    ["jar" "Build the jar"
-    :action #'create-jar]
+    :action create-jar]
    ["uberjar" "Built the uberjar"
-    :action #'create-uberjar]
-   ["deploy" "Build a jar and deploy it to Clojars"
-    :action #'deploy]
-   #_["repl" "Open a repl"
-    :action repl]])
+    :action create-uberjar]
+   ["deploy" "Build and deploy jar to Clojars"
+    :action deploy]
+   ["install" "Build and install jar to local Maven repo"
+    :action install]])
 
 (defn make-cmd-summary-part
   [spec]
@@ -229,10 +237,11 @@
      :cmd-args args
      :cmd-errors errors}))
 
+(def clein-version (delay (str/trim (slurp (io/resource "CLEIN_VERSION")))))
+
 (defn help-message
   [specs cmd-specs]
-  (let [lines ["clein v1.0"
-               ""
+  (let [lines [(str "clein v" @clein-version)
                "Usage: clein [options] action"
                ""
                "Options:"
