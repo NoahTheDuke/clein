@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Add `install` command to install in local Maven repo.
+- Write a little subcommand parser, might pull it out for inclusion in `tools.cli`.
+
+## 0.2.2
+
 - `--snapshot` allows for building and deploying a jar with version `-SNAPSHOT`.
 - Include `:provided` alias.
 
