@@ -21,6 +21,28 @@ Run with `clojure -M:clein [...]`.
 Either copy `src/noahtheduke/clein.cljc` to a folder on your $PATH and `chmod +x` it, or
 use [bbin](https://github.com/babashka/bbin) to install it.
 
+## How to use
+
+Using the above alias:
+
+```
+$ clojure -M:clein --help
+clein v0.2.2
+Usage: clein [options] command [args...]
+
+Options:
+      --snapshot  Append -SNAPSHOT to the version
+  -h, --help      Shows this help
+
+Commands:
+  clean    Clean the target directory
+  pom      Create just the pom.xml
+  jar      Build the jar
+  uberjar  Built the uberjar
+  deploy   Build and deploy jar to Clojars
+  install  Build and install jar to local Maven repo
+```
+
 ## How to configure
 
 Add the alias `:clein/build` with the clein-specific configuration. The example below
@@ -58,10 +80,12 @@ details all possible options with their defaults:
                 [:url "https://mozilla.org/MPL/2.0"]
                 [:distribution "repo"]]]]
 
-   ; :src-dirs is optional
+   ; :src-dirs is optional but STRONGLY RECOMMENDED
    ; If not included, defaults to :paths in deps.edn.
-   ; :paths should include any "resources" paths you want as well.
    :src-dirs ["src/clojure"]
+
+   ; :resource-dirs is optional but STRONGLY RECOMMENDED
+   :resource-dirs ["resources"]
 
    ; :java-src-dirs is optional
    ; If not included, defaults to nil and no java compilation will happen.
@@ -89,9 +113,10 @@ details all possible options with their defaults:
          :tag "v1.0.0"}}}}
 ```
 
-Additionally, if there is a `:provided` alias, it will be included when building the
-basis for the jar, uberjar, and deploying. This allows specifying `:extra-deps` that
-users must include themselves, generally for optional dependencies.
+Additionally, if there is a `:provided` alias with `:extra-deps`, it will be included in
+the generated `pom.xml` with `<scope>provided</scope>` when building the uberjar, and
+deploying. This allows specifying `:extra-deps` that users must include themselves,
+generally for optional dependencies.
 
 ## Rationale
 

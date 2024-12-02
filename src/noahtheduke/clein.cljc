@@ -8,9 +8,13 @@
   (:require
    [babashka.process :refer [shell]]
    [clojure.java.io :as io]
+   #_:clj-kondo/ignore
+   [clojure.pprint :refer [pprint]]
+   [clojure.set :as set]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
-   [clojure.tools.cli :as cli])
+   [clojure.tools.cli :as cli]
+   [noahtheduke.pom-data :refer [write-pom]])
   (:import
    [java.lang System]))
 
@@ -92,14 +96,16 @@
           (System/exit 1))
       :else
       (as-> conformed $
-        (assoc $ :basis (b/create-basis {:project "deps.edn"
-                                         :aliases [:provided]}))
+        (assoc $ :basis (b/create-basis {:project "deps.edn"}))
+        (assoc $ :provided (b/create-basis {:project "deps.edn"
+                                            :aliases [:provided]}))
         (update $ :version #(str (if (= :s (key %))
                                    (str/replace (val %) "{{git-count-revs}}" (b/git-count-revs nil))
                                    (str/trim (slurp (val %))))
                                  (when (:snapshot options)
                                    "-SNAPSHOT")))
         (update $ :src-dirs #(or (not-empty %) (:paths (:basis $))))
+        (update $ :resource-dirs not-empty)
         (update $ :java-src-dirs not-empty)
         (update $ :javac-options not-empty)
         (update $ :target-dir #(or % "target"))
@@ -141,7 +147,7 @@
   (println "Compiling" (:lib opts))
   (compile-java opts)
   (b/compile-clj opts)
-  (b/write-pom opts)
+  (write-pom opts)
   (b/uber opts)
   (println "Created" (str (.getAbsoluteFile (io/file (:uber-file opts))))))
 
@@ -149,7 +155,7 @@
   (clean opts)
   (copy-src opts)
   (compile-java opts)
-  (b/write-pom opts)
+  (write-pom opts)
   (b/jar opts)
   (let [deploy-alias
         {:aliases
@@ -181,15 +187,23 @@
 
 (def cli-subcommands
   [["clean" "Clean the target directory"
-    :action clean]
+    :action clean
+    :opts [["-h" "--help" "Show this help"]]]
+   ["pom" "Create just the pom.xml"
+    :action write-pom
+    :opts cli-options]
    ["jar" "Build the jar"
-    :action create-jar]
+    :action create-jar
+    :opts cli-options]
    ["uberjar" "Built the uberjar"
-    :action create-uberjar]
+    :action create-uberjar
+    :opts cli-options]
    ["deploy" "Build and deploy jar to Clojars"
-    :action deploy]
+    :action deploy
+    :opts cli-options]
    ["install" "Build and install jar to local Maven repo"
-    :action install]])
+    :action install
+    :opts cli-options]])
 
 (defn make-cmd-summary-part
   [spec]
@@ -209,7 +223,7 @@
   [arguments]
   {:post [(every? :id %)
           (every? (comp seq :name) %)
-          (every? (comp ifn? :action) %)
+          (every? (some-fn :action :opts) %)
           (apply distinct? (or (seq (map :id %)) [true]))]}
   (map (fn [spec]
          (let [sopt-lopt-desc (take-while string? spec)
@@ -221,34 +235,58 @@
                   spec-map)))
        arguments))
 
+(defn parse-opts [args specs & {:keys [strict in-order]
+                                :or {strict true
+                                     in-order true}}]
+  (set/rename-keys
+   (cli/parse-opts args specs
+                   :strict strict
+                   :in-order in-order
+                   :summary-fn identity)
+   {:summary :specs}))
+
 (defn verify-cmd
-  [specs cmd-arg]
-  (if-let [cmd (some #(when (= cmd-arg (:name %)) %) specs)]
-    [cmd nil]
+  [specs [cmd-arg & args]]
+  (if-let [cmd (when (and (string? cmd-arg) (not (str/starts-with? cmd-arg "-")))
+                 (some #(when (= cmd-arg (:name %)) %) specs))]
+    [(merge cmd (parse-opts args (:opts cmd) {:in-order false})) nil]
     [nil [(str "Unknown command: " (pr-str cmd-arg))]]))
 
 (defn parse-subcommand
   "Inspired by clojure.tools.cli/parse-opts"
-  [[cmd-arg & args] subcommand-specs & {:keys [summary-fn]}]
+  [arguments subcommand-specs]
   (let [specs (compile-subcommand-specs subcommand-specs)
-        [cmd errors] (verify-cmd specs cmd-arg)]
-    {:cmd-command cmd
-     :cmd-summary ((or summary-fn summarize-subcommands) specs)
-     :cmd-args args
-     :cmd-errors errors}))
+        [cmd errors] (verify-cmd specs arguments)]
+    {:name (:name cmd)
+     :action (:action cmd)
+     :options (:options cmd)
+     :args (:arguments cmd)
+     :specs (:specs cmd)
+     :all-specs specs
+     :errors (concat errors (:errors cmd))}))
 
 (def clein-version (delay (str/trim (slurp (io/resource "CLEIN_VERSION")))))
 
-(defn help-message
+(defn base-help-message
   [specs cmd-specs]
   (let [lines [(str "clein v" @clein-version)
-               "Usage: clein [options] action"
+               "Usage: clein [options] command [args...]"
                ""
                "Options:"
                (cli/summarize specs)
                ""
-               "Actions:"
+               "Commands:"
                (summarize-subcommands cmd-specs)
+               ""]]
+    {:exit-message (str/join \newline lines)
+     :ok true}))
+
+(defn cmd-help-message
+  [command]
+  (let [lines [(str "clein " (:name command) " [options] [args...]")
+               ""
+               "Options:"
+               (cli/summarize (:specs command))
                ""]]
     {:exit-message (str/join \newline lines)
      :ok true}))
@@ -259,29 +297,28 @@
    :ok false})
 
 (defn validate-args
-  [args]
-  (let [{:keys [arguments options errors] specs :summary :as opts}
-        (cli/parse-opts args cli-options :strict true :in-order true :summary-fn identity)
-        {:keys [cmd-command cmd-summary cmd-errors cmd-args] :as cmds}
-        (parse-subcommand arguments cli-subcommands :summary-fn identity)
-        errors (seq (concat errors cmd-errors))]
+  [arguments base-specs command-specs]
+  (let [{:keys [options errors arguments specs] :as opts}
+        (parse-opts arguments base-specs)
+        command (parse-subcommand arguments command-specs)
+        errors (seq (concat errors (:errors command)))]
     (cond
-      (:help options) (help-message specs cmd-summary)
+      (:help options) (base-help-message specs (:all-specs command))
+      (:help (:options command)) (cmd-help-message command)
       errors (print-errors errors)
-      cmd-command
-      {:command cmd-command
+      (:name command)
+      {:command (:action command)
        :ok true
-       :options options
-       :args cmd-args}
-      :else (help-message specs cmd-summary))))
+       :options (merge options (:options command))
+       :args (:args command)}
+      :else (base-help-message specs (:all-specs command)))))
 
 (defn -main [& args]
-  (let [{:keys [command exit-message ok options]} (validate-args args)
+  (let [{:keys [command exit-message ok options]} (validate-args args cli-options cli-subcommands)
         build-opts (clein-build-opts options)]
-    (when exit-message
-      (println exit-message))
-    (when command
-      ((:action command) build-opts))
+    (cond
+      exit-message (println exit-message)
+      command (command build-opts))
     (System/exit (if ok 0 1))))
 
 (when (= *file* (System/getProperty "babashka.file"))
