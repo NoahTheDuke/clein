@@ -6,7 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.3.1
+
+Released on 2024-12-02.
+
+- Stop loading `pprint`.
+- Split namespaces for ease of development.
+- Maybe fix analysis issue for cljdoc.org.
+
+## 0.3.0
+
+Released on 2024-12-02.
+
 - Add `install` command to install in local Maven repo.
+- Add `pom` command to generate `pom.xml` file.
+- Support `:resource-dirs`.
+- Document that `:src-dirs` and `:resource-dirs` is strongly encouraged.
 - Write a little subcommand parser, might pull it out for inclusion in `tools.cli`.
 
 ## 0.2.2

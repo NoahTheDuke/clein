@@ -8,19 +8,18 @@
 
 #?(:bb (do (clojure.core/require '[babashka.deps :as deps])
            (deps/add-deps '{:deps {io.github.babashka/tools.bbuild
-                                   {:git/sha "f5a4acaf25ec2bc5582853758ba81383fff5e86b"}}}))
-   :clj (clojure.core/require '[babashka.process.pprint]))
+                                   {:git/sha "f5a4acaf25ec2bc5582853758ba81383fff5e86b"}}})))
 
 (ns ^:no-doc noahtheduke.clein
   (:require
-   [babashka.process :refer [shell]]
+   [babashka.process :as process]
    [clojure.java.io :as io]
    [clojure.set :as set]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
    [clojure.tools.build.api :as b]
    [clojure.tools.cli :as cli]
-   [noahtheduke.clein.pom-data :refer [write-pom]]
+   [noahtheduke.clein.pom-data :as pom]
    [noahtheduke.clein.specs :as specs])
   (:import
    [java.lang System]))
@@ -107,7 +106,7 @@
   (println "Compiling" (:lib opts))
   (compile-java opts)
   (b/compile-clj opts)
-  (write-pom opts)
+  (pom/write-pom opts)
   (b/uber opts)
   (println "Created" (str (.getAbsoluteFile (io/file (:uber-file opts))))))
 
@@ -115,7 +114,7 @@
   (clean opts)
   (copy-src opts)
   (compile-java opts)
-  (write-pom opts)
+  (pom/write-pom opts)
   (b/jar opts)
   (let [deploy-alias
         {:aliases
@@ -129,7 +128,7 @@
                        :password (System/getenv "CLOJARS_PASSWORD")}}}}
         deps-str (binding [*print-namespace-maps* false]
                    (pr-str deploy-alias))]
-    (try (shell "clojure" "-Sdeps" deps-str "-X:deploy")
+    (try (process/shell "clojure" "-Sdeps" deps-str "-X:deploy")
          (catch clojure.lang.ExceptionInfo _
            (System/exit 1)))))
 
@@ -150,7 +149,7 @@
     :action clean
     :opts [["-h" "--help" "Show this help"]]]
    ["pom" "Create just the pom.xml"
-    :action write-pom
+    :action pom/write-pom
     :opts cli-options]
    ["jar" "Build the jar"
     :action create-jar
