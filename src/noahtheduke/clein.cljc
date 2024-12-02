@@ -8,8 +8,6 @@
   (:require
    [babashka.process :refer [shell]]
    [clojure.java.io :as io]
-   #_:clj-kondo/ignore
-   [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]

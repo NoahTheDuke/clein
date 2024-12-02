@@ -1,12 +1,10 @@
 ; Adapted from https://github.com/matterandvoid-space/eql/blob/560db80ce487a9507a15b44387c18413d7bcc91c/build.clj
 ; Licensed under MIT
 
-(ns noahtheduke.pom-data 
+(ns noahtheduke.pom-data
   (:require
    [clojure.data.xml :as xml]
-   [clojure.java.io :as io]
-   #_:clj-kondo/ignore
-   [clojure.pprint :refer [pprint]]))
+   [clojure.java.io :as io]))
 
 #?(:bb (do (require '[babashka.deps :as deps])
            (deps/add-deps '{:deps {io.github.babashka/tools.bbuild
