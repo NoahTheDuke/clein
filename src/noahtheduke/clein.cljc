@@ -4,6 +4,13 @@
 ; License, v. 2.0. If a copy of the MPL was not distributed with this
 ; file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+(in-ns 'noahtheduke.clein)
+
+#?(:bb (do (clojure.core/require '[babashka.deps :as deps])
+           (deps/add-deps '{:deps {io.github.babashka/tools.bbuild
+                                   {:git/sha "f5a4acaf25ec2bc5582853758ba81383fff5e86b"}}}))
+   :clj (clojure.core/require '[babashka.process.pprint]))
+
 (ns ^:no-doc noahtheduke.clein
   (:require
    [babashka.process :refer [shell]]
@@ -11,57 +18,12 @@
    [clojure.set :as set]
    [clojure.spec.alpha :as s]
    [clojure.string :as str]
+   [clojure.tools.build.api :as b]
    [clojure.tools.cli :as cli]
-   [noahtheduke.pom-data :refer [write-pom]])
+   [noahtheduke.clein.pom-data :refer [write-pom]]
+   [noahtheduke.clein.specs :as specs])
   (:import
    [java.lang System]))
-
-#?(:bb (do (require '[babashka.deps :as deps])
-           (deps/add-deps '{:deps {io.github.babashka/tools.bbuild
-                                   {:git/sha "f5a4acaf25ec2bc5582853758ba81383fff5e86b"}}}))
-   :clj (require '[babashka.process.pprint]))
-
-(require '[clojure.tools.build.api :as b])
-
-;; required
-(s/def ::lib qualified-symbol?)
-(s/def ::main simple-symbol?)
-(s/def ::url string?)
-
-(s/def :v/string string?)
-(s/def :v/file #(when (string? %)
-                  (let [f (io/file %)]
-                    (and (.exists f) (.isFile f)))))
-(s/def ::version (s/or :f :v/file :s :v/string))
-
-(s/def :l/name string?)
-(s/def :l/url string?)
-(s/def :l/distribution #{:repo :manual})
-(s/def :l/comments string?)
-(s/def ::license (s/keys :req-un [:l/name :l/url]
-                         :opt-un [:l/distribution :l/comments]))
-(s/def ::pom-data vector?)
-
-;; optional
-(s/def ::jar-name string?)
-(s/def ::uberjar-name string?)
-(s/def ::src-dirs (s/coll-of string? :into []))
-(s/def ::java-src-dirs (s/coll-of string? :into []))
-(s/def ::javac-opts (s/coll-of string? :into []))
-(s/def ::target-dir string?)
-
-(s/def :scm/url string?)
-(s/def :scm/connection string?)
-(s/def :scm/developerConnection string?)
-(s/def :scm/tag string?)
-(s/def ::scm (s/keys :req-un [:scm/url :scm/tag]
-                     :opt-un [:scm/connection :scm/developerConnection]))
-
-(s/def ::build-opts (s/keys :req-un [::lib ::main ::version ::url]
-                            :opt-un [::license ::pom-data
-                                     ::jar-name ::uberjar-name
-                                     ::src-dirs ::java-src-dirs
-                                     ::javac-opts ::target-dir ::scm]))
 
 (defn build-pom-data [opts]
   (assert (or (contains? opts :license)
@@ -83,14 +45,14 @@
 
 (defn clein-build-opts [options]
   (let [build-opts (:argmap (b/create-basis {:aliases [:clein/build]}))
-        conformed (s/conform ::build-opts build-opts)]
+        conformed (s/conform ::specs/build-opts build-opts)]
     (cond
       (not build-opts)
       (do (println "deps.edn alias :clein/build must exist")
           (System/exit 1))
       (= ::s/invalid conformed)
       (do (println "Error in the :clein/build map:")
-          (println (s/explain-str ::build-opts build-opts))
+          (println (s/explain-str ::specs/build-opts build-opts))
           (System/exit 1))
       :else
       (as-> conformed $
@@ -233,9 +195,10 @@
                   spec-map)))
        arguments))
 
-(defn parse-opts [args specs & {:keys [strict in-order]
-                                :or {strict true
-                                     in-order true}}]
+(defn parse-opts
+  [args specs & {:keys [strict in-order]
+                 :or {strict true
+                      in-order true}}]
   (set/rename-keys
    (cli/parse-opts args specs
                    :strict strict
