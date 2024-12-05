@@ -44,7 +44,7 @@
 
 (defn write-pom [opts]
   (b/write-pom opts)
-  (let [pom-path (b/pom-path opts)
+  (let [pom-path (:pom-path opts)
         provided-deps (get-provided-deps (:provided opts))
         updated-pom (insert-dependencies pom-path provided-deps)]
     (write-xml-file pom-path updated-pom)
