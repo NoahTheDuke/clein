@@ -20,6 +20,30 @@
       (str/join \newline lines))
     ""))
 
+(def ^:private spec-keys
+  #{:name :desc :action :opts :help})
+
+(defn- check-spec-keys
+  [spec-map]
+  (when *assert*
+    (when-let [remainder (not-empty (keys (apply dissoc spec-map spec-keys)))]
+      (binding [*out* *err*]
+        (println (format "Warning: Unknown parse-command opts '%s'"
+                         (str/join ", " remainder))))))
+  spec-map)
+
+(defn- conform-spec
+  [spec]
+  (let [sopt-lopt-desc (take-while #(or (string? %) (nil? %)) spec)
+        spec-map (apply hash-map (drop (count sopt-lopt-desc) spec))
+        [opt-name desc] sopt-lopt-desc]
+    (check-spec-keys spec-map)
+    (merge {:name opt-name
+            :desc desc}
+           (cond-> spec-map
+             true (dissoc :help)
+             (:help spec-map true) (update :opts (fnil conj []) cli-help)))))
+
 (defn- compile-subcommand-specs
   "Modified from clojure.tools.cli/compile-option-specs"
   [arguments]
@@ -30,14 +54,9 @@
           (every? (comp ifn? :action) %)
           (apply distinct? (or (seq (map :name %)) [true]))]}
   (map (fn [spec]
-         (let [sopt-lopt-desc (take-while #(or (string? %) (nil? %)) spec)
-               spec-map (apply hash-map (drop (count sopt-lopt-desc) spec))
-               [opt-name desc] sopt-lopt-desc]
-           (merge {:name opt-name
-                   :desc desc}
-                  (cond-> spec-map
-                    true (dissoc :help)
-                    (:help spec-map true) (update :opts (fnil conj []) cli-help)))))
+         (if (map? spec)
+           (check-spec-keys spec)
+           (conform-spec spec)))
        arguments))
 
 (defn parse-opts
@@ -106,6 +125,11 @@
 
     :help    Boolean, defaults to true. If logical true, then `:opts` will be
              appended with a `-h/--help` option spec.
+
+  If desired, the :property value pairs can be a map literal:
+
+    [name description
+     {:property value}]
   "
   [[cmd-arg & args] subcommand-specs]
   (let [specs (compile-subcommand-specs subcommand-specs)]
