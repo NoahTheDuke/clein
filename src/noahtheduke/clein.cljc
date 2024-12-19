@@ -58,6 +58,7 @@
         (assoc $ :basis (b/create-basis {:project "deps.edn"}))
         (assoc $ :provided (b/create-basis {:project "deps.edn"
                                             :aliases [:provided]}))
+        (assoc $ :version-raw (:version $))
         (update $ :version #(str (if (= :s (key %))
                                    (str/replace (val %) "{{git-count-revs}}" (b/git-count-revs nil))
                                    (str/trim (slurp (val %))))
@@ -77,7 +78,7 @@
         (update $ :jar-name #(or % (format "%s-%s.jar" (name (:lib $)) (:version $))))
         (assoc $ :jar-file (str (io/file (:target-dir $) (:jar-name $))))
         (update $ :uberjar-name #(or % (format "%s-%s-standalone.jar" (name (:lib $)) (:version $))))
-        (assoc $ :uber-file (str (io/file (:target-dir $) (:uberjar-name $))))))))
+        (assoc $ :uberjar-file (str (io/file (:target-dir $) (:uberjar-name $))))))))
 
 (defn clean [opts]
   (b/delete {:path (:class-dir opts)}))
@@ -96,7 +97,7 @@
     (println "Wrote pom to" pom-path)))
 
 (defn copy-src [opts]
-  (b/copy-dir {:src-dirs (:src-dirs opts)
+  (b/copy-dir {:src-dirs (concat (:src-dirs opts) (:resource-dirs opts))
                :target-dir (:class-dir opts)}))
 
 (defn compile-java [opts]
@@ -122,7 +123,7 @@
   (b/compile-clj opts)
   (pom/write-pom opts)
   (b/uber opts)
-  (println "Created" (str (.getAbsoluteFile (io/file (:uber-file opts))))))
+  (println "Created" (str (.getAbsoluteFile (io/file (:uberjar-file opts))))))
 
 (defn deploy [opts]
   (clean opts)
@@ -154,6 +155,9 @@
   (b/install opts)
   (println "Installed" (:jar-name opts)))
 
+(defn export [opts]
+  (println "Exported" opts))
+
 (def ^:private base-specs [cli/cli-help])
 (def ^:private cli-snapshot [nil "--snapshot" "Append -SNAPSHOT to the version"])
 
@@ -175,6 +179,9 @@
     :opts [cli-snapshot]]
    ["install" "Build and install jar to local Maven repo"
     :action install
+    :opts [cli-snapshot]]
+   ["export" "Create a build.clj matching the existing :clein/build config"
+    :action export
     :opts [cli-snapshot]]])
 
 (defn -main [& args]

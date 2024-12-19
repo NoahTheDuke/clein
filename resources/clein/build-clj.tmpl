@@ -1,0 +1,64 @@
+(ns build
+  (:require
+   [clojure.string :as str]
+   [clojure.tools.build.api :as b]
+   [deps-deploy.deps-deploy :as dd]))
+
+(def lib '{{lib}})
+(def version {{version}})
+(def class-dir "target/classes")
+(def jar-file (format "target/%s-%s.jar" (name lib) version))
+(def uberjar-file (format "target/%s-%s.jar" (name lib) version))
+
+(defn make-opts [opts]
+  (assoc opts
+    :lib {{lib}}
+    :version {{version}}
+    :basis (b/create-basis {:project "deps.edn"})
+    :class-dir {{class-dir}}
+    :jar-file {{jar-file}}
+    :uber-file {{uberjar-file}}
+    :src-dirs {{src-dirs}}
+    :resource-dirs {{resource-dirs}}
+    :main '{{main}}
+    ))
+
+(defn clean [opts]
+  (let [opts (make-opts opts)]
+    (b/delete {:path (:class-dir opts)})))
+
+(defn copy-src [opts]
+  (let [opts (make-opts opts)]
+    (b/copy-dir {:src-dirs (concat (:src-dirs opts) (:resource-dirs opts))
+                 :target-dir (:class-dir opts)})))
+
+(defn jar [opts]
+  (let [opts (make-opts opts)]
+    (clean opts)
+    (copy-src opts)
+    (b/jar opts)))
+
+(defn uberjar [opts]
+  (let [opts (make-opts opts)]
+    (clean opts)
+    (copy-src opts)
+    (b/compile-clj opts)
+    (b/write-pom opts)
+    (b/uber opts)))
+
+(defn deploy [opts]
+  (let [opts (make-opts opts)]
+    (clean opts)
+    (copy-src opts)
+    (b/write-pom opts)
+    (b/jar opts)
+    (dd/deploy {:installer :remote
+                :artifact (b/resolve-path (:jar-file opts))
+                :pom-file (b/pom-path opts)})))
+
+(defn install [opts]
+  (let [opts (make-opts opts)]
+    (clean opts)
+    (jar opts)
+    (b/install opts)
+    (println "Installed version" (:lib opts) (:version opts))))
