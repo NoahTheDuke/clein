@@ -64,31 +64,35 @@ The example below details all possible options with their defaults:
    ; :version "1.0.{{git-count-revs}}"
    ; :version "resources/CLEIN_VERSION" (contents: "1.0.0" or "1.0.{{git-count-revs}}")
 
-   ; :license OR :pom-data are required, but not both.
-
+   ; :license OR :pom-data are required.
+   ; Both can be provided as long as :pom-data does not contain [:licenses].
+   ;
    ; :license only allows :name, :url, :distribution, :comments.
    ; :name and :url and required, :distribution and :comments are optional.
-   ; If not included, defaults to :distribution :repo, no :comments.
    :license {:name "MPL-2.0"
              :url "https://mozilla.org/MPL/2.0"}
 
    ; :pom-data is checked to be a vector and is otherwise passed directly
-   ; to b/write-pom.
-   :pom-data [[:licenses
-               [:license
-                [:name "MPL-2.0"]
-                [:url "https://mozilla.org/MPL/2.0"]
-                [:distribution "repo"]]]]
+   ; to b/write-pom. If :license is provided as above, must not contain [:licenses].
+   ;
+   ; :pom-additions in Leiningen.
+   :pom-data [[:developers
+               [:developer
+                [:id "NoahTheDuke"]
+                [:name "Noah Bogart"]
+                [:url "https://noahbogart.com"]
+                [:roles
+                 [:role "developer"]]]]]
 
    ; :src-dirs is optional but STRONGLY RECOMMENDED
    ; If not included, defaults to :paths in deps.edn.
    ;
-   ; :source-paths in Leiningen
+   ; :source-paths in Leiningen.
    :src-dirs ["src/clojure"]
 
    ; :resource-dirs is optional but STRONGLY RECOMMENDED
    ;
-   ; :resource-paths in Leiningen
+   ; :resource-paths in Leiningen.
    :resource-dirs ["resources"]
 
    ; :java-src-dirs is optional
@@ -96,13 +100,13 @@ The example below details all possible options with their defaults:
    ; If included, the given directories will be compiled before jars are created.
    ; Java classes are compiled into :target/classes as below.
    ;
-   ; :java-source-paths in Leiningen
+   ; :java-source-paths in Leiningen.
    :java-src-dirs ["src/java"]
 
    ; :javac-opts is optional
    ; If included, it will be passed to b/javac as-is.
    ;
-   ; :javac-options in Leiningen
+   ; :javac-options in Leiningen.
    :javac-opts ["--release" "11"]
 
    ; :target-dir is optional
@@ -110,7 +114,7 @@ The example below details all possible options with their defaults:
    ; Classes are compiled into :target-dir/classes, and jar and uberjar are built in
    ; :target-dir/:jar-name and :target-dir/:uberjar-name, respectively.
    ;
-   ; :target-path in Leiningen
+   ; :target-path in Leiningen.
    :target-dir "target"
 
    :jar-name "clein.jar" ; optional, default (format "%s-%s.jar" (name lib) version)

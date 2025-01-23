@@ -26,20 +26,21 @@
 (defn build-pom-data [opts]
   (assert (or (contains? opts :license)
               (contains? opts :pom-data))
-          "Must specify ONE of :license OR :pom-data")
-  (assert (not (and (contains? opts :license)
-                    (contains? opts :pom-data)))
-          "Must only specify :license OR :pom-data")
-  (or (:pom-data opts)
-      (let [license (:license opts)]
-        [[:licenses
-          [:license
-           [:name (:name license)]
-           [:url (:url license)]
-           (when (:distribution license)
-             [:distribution (name (:distribution license))])
-           (when (:comments license)
-             [:comments (:comments license)])]]])))
+          "Must specify :license or :pom-data")
+  (assert (not (and (:license opts)
+                    (some #(= :licenses (first %)) (:pom-data opts))))
+          "Must not specify :license AND :pom-data containing [:licenses]")
+  (-> (vec (:pom-data opts))
+      (into (when-let [license (:license opts)]
+              [[:licenses
+                (-> [:license
+                     [:name (:name license)]
+                     [:url (:url license)]]
+                    (into (when (:distribution license)
+                            [:distribution (name (:distribution license))]))
+                    (into (when (:comments license)
+                            [:comments (:comments license)])))]]))
+      (not-empty)))
 
 (defn clein-build-opts [options]
   (let [build-opts (:argmap (b/create-basis {:aliases [:clein/build]}))
@@ -74,7 +75,6 @@
         (assoc $ :class-dir (str (io/file (:target-dir $) "classes")))
         (update $ :scm #(merge {:url (:url $)
                                 :tag (str "v" (:version $))} %))
-        (assoc $ :src-pom nil)
         (assoc $ :pom-data (build-pom-data $))
         (assoc $ :pom-path (b/pom-path $))
         (update $ :jar-name #(or % (format "%s-%s.jar" (name (:lib $)) (:version $))))
@@ -86,7 +86,7 @@
   (b/delete {:path (:class-dir opts)}))
 
 (defn write-pom [opts]
-  (let [target-dir (some-> opts :options :target-dir)
+  (let [target-dir (some-> opts :options :pom-target-dir)
         pom-path (if target-dir
                    (str (io/file target-dir "pom.xml"))
                    (:pom-path opts))
@@ -168,7 +168,8 @@
     :action clean]
    ["pom" "Create just the pom.xml"
     :action write-pom
-    :opts [[nil "--target-dir dir" "Output pom.xml to DIR (defaults to target directory)"]
+    :opts [[nil "--target-dir dir" "Output pom.xml to DIR (defaults to target directory)"
+            :id :pom-target-dir]
            cli-snapshot]]
    ["jar" "Build the jar"
     :action create-jar
