@@ -1,27 +1,25 @@
 (ns build
   (:require
+   [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.tools.build.api :as b]
    [deps-deploy.deps-deploy :as dd]))
-
-(def lib '{{lib}})
-(def version {{version}})
-(def class-dir "target/classes")
-(def jar-file (format "target/%s-%s.jar" (name lib) version))
-(def uberjar-file (format "target/%s-%s.jar" (name lib) version))
-
+{{version-defn}}
 (defn make-opts [opts]
-  (assoc opts
-    :lib {{lib}}
-    :version {{version}}
-    :basis (b/create-basis {:project "deps.edn"})
-    :class-dir {{class-dir}}
-    :jar-file {{jar-file}}
-    :uber-file {{uberjar-file}}
-    :src-dirs {{src-dirs}}
-    :resource-dirs {{resource-dirs}}
-    :main '{{main}}
-    ))
+  (let [version {{version-call}}
+        lib '{{lib}}]
+    (assoc opts
+      :lib lib
+      :version version
+      :main '{{main}}
+      :basis (b/create-basis {:project "deps.edn"})
+      :class-dir "{{class-dir}}"
+      :jar-file {{jar-file}}
+      :uber-file {{uberjar-file}}
+      :src-dirs {{src-dirs|safe}}
+      :resource-dirs {{resource-dirs|safe}}
+{% if java-src-dirs %}      :java-src-dirs {{java-src-dirs|safe}}
+{% endif %}      :pom-data {{pom-data|safe}})))
 
 (defn clean [opts]
   (let [opts (make-opts opts)]
@@ -36,15 +34,17 @@
   (let [opts (make-opts opts)]
     (clean opts)
     (copy-src opts)
-    (b/jar opts)))
-
+    (b/jar opts)
+    (println "Created" (str (b/resolve-path (:jar-file opts))))))
+{{javac-defn}}
 (defn uberjar [opts]
   (let [opts (make-opts opts)]
     (clean opts)
     (copy-src opts)
-    (b/compile-clj opts)
-    (b/write-pom opts)
-    (b/uber opts)))
+{% if javac-call %}    {{javac-call}}
+{% endif %}    (b/write-pom opts)
+    (b/uber opts)
+    (println "Created" (str (b/resolve-path (:jar-file opts))))))
 
 (defn deploy [opts]
   (let [opts (make-opts opts)]

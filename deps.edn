@@ -2,7 +2,8 @@
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/tools.cli {:mvn/version "1.0.219"}
         io.github.clojure/tools.build {:mvn/version "0.10.3"}
-        babashka/process {:mvn/version "0.5.22"}}
+        babashka/process {:mvn/version "0.5.22"}
+        selmer/selmer {:mvn/version "1.12.61"}}
  :aliases
  {:run {:main-opts ["-m" "noahtheduke.clein"]}
   ; :provided {:extra-deps {nubank/matcher-combinators {:mvn/version "3.8.5"}}}
@@ -13,6 +14,9 @@
                       "--interactive"
                       "--middleware" "[cider.nrepl/cider-middleware]"
                       "-f" "rebel-readline.main/-main"]}
+  :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.6"}
+                 slipset/deps-deploy {:mvn/version "0.2.1"}}
+          :ns-default build}
   :clein/build {:lib io.github.noahtheduke/clein
                 :main noahtheduke.clein
                 :version "resources/CLEIN_VERSION"

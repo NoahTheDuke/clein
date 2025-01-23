@@ -19,7 +19,9 @@
    [clojure.tools.build.api :as b]
    [noahtheduke.clein.pom-data :as pom]
    [noahtheduke.clein.specs :as specs]
-   [noahtheduke.clein.cli :as cli])
+   [noahtheduke.clein.cli :as cli]
+   [selmer.parser :as selmer]
+   [selmer.util :as u])
   (:import
    [java.lang System]))
 
@@ -77,8 +79,10 @@
                                 :tag (str "v" (:version $))} %))
         (assoc $ :pom-data (build-pom-data $))
         (assoc $ :pom-path (b/pom-path $))
+        (assoc $ :jar-name-raw (:jar-name $))
         (update $ :jar-name #(or % (format "%s-%s.jar" (name (:lib $)) (:version $))))
         (assoc $ :jar-file (str (io/file (:target-dir $) (:jar-name $))))
+        (assoc $ :uberjar-name-raw (:uberjar-name $))
         (update $ :uberjar-name #(or % (format "%s-%s-standalone.jar" (name (:lib $)) (:version $))))
         (assoc $ :uberjar-file (str (io/file (:target-dir $) (:uberjar-name $))))))))
 
@@ -115,7 +119,7 @@
   (copy-src opts)
   (compile-java opts)
   (b/jar opts)
-  (println "Created" (str (.getAbsoluteFile (io/file (:jar-file opts))))))
+  (println "Created" (str (b/resolve-path (:jar-file opts)))))
 
 (defn create-uberjar [opts]
   (clean opts)
@@ -125,7 +129,7 @@
   (b/compile-clj opts)
   (pom/write-pom opts)
   (b/uber opts)
-  (println "Created" (str (.getAbsoluteFile (io/file (:uberjar-file opts))))))
+  (println "Created" (str (b/resolve-path (:jar-file opts)))))
 
 (defn deploy [opts]
   (clean opts)
@@ -157,8 +161,72 @@
   (b/install opts)
   (println "Installed" (:jar-name opts)))
 
+(defn make-version-defn [opts]
+  (when (= :file (key (:version-raw opts)))
+    (-> [""
+         "(defn make-version []"
+         "  (-> (slurp {{file}})"
+         "      (str/trim)"
+         "      (str/replace \"{{git-count-revs}}\" (b/git-count-revs nil))))"
+         ""]
+        (->> (str/join "\n"))
+        (str/replace "{{file}}" (pr-str (val (:version-raw opts)))))))
+
+(defn make-version-call [opts]
+  (if (:version-defn opts)
+    "(make-version)"
+    (let [[front back] (str/split (val (:version-raw opts)) #"\{\{git-count-revs}}")]
+      (pr-str
+       (if back
+         (format "(str %s (b/git-count-revs nil) %s)"
+                 front back)
+         front)))))
+
+(defn make-javac-defn [opts]
+  (when (:java-src-dirs opts)
+    (-> [""
+         "(defn compile-java [opts]"
+         "  (println \"Compiling\" (str/join \", \" (:java-src-dirs opts)))"
+         "  (b/javac {:src-dirs (:java-src-dirs opts)"
+         "            :class-dir (:class-dir opts)"
+         (str "            :basis (:basis opts)"
+              (when (:javac-opts opts)
+                "\n            :javac-opts {{javac-opts}}")
+              "}))")
+         ""]
+        (->> (str/join "\n")))))
+
 (defn export [opts]
-  (println "Exported" opts))
+  (u/without-escaping
+    (let [render-opts
+          (as-> opts $
+            (assoc $ :version-defn (make-version-defn $))
+            (assoc $ :version-call (make-version-call $))
+            (assoc $ :jar-file (format "(str (io/file %s %s))"
+                                       (pr-str (:target-dir $))
+                                       (if (:jar-name-raw $)
+                                         (pr-str (:jar-name-raw $))
+                                         "(format \"%s-%s.jar\" (name lib) version)")))
+            (assoc $ :uberjar-file (format "(str (io/file %s %s))"
+                                           (pr-str (:target-dir $))
+                                           (if (:uberjar-name-raw $)
+                                             (pr-str (:uberjar-name-raw $))
+                                             "(format \"%s-%s-standalone.jar\" (name lib) version)")))
+            (update $ :pom-data #(when %
+                                   (-> ((requiring-resolve 'clojure.pprint/pprint) %)
+                                       (with-out-str)
+                                       (str/split #"\n")
+                                       (->> (str/join "\n                ")))))
+            (assoc $ :javac-defn (make-javac-defn $))
+            (assoc $ :javac-call (when (:javac-defn $)
+                                   "(compile-java opts)"))
+            (update $ :javac-opts #(or % "nil")))]
+      (spit "build.clj" (selmer/render-file "clein/build-clj.tmpl" render-opts))
+      (println "Exported to build.clj")
+      (println "Add the alias below to your deps.edn to use:\n")
+      (println (str ":build {:deps {io.github.clojure/tools.build {:mvn/version \"0.10.6\"}\n"
+                    "               slipset/deps-deploy {:mvn/version \"0.2.1\"}}\n"
+                    "        :ns-default build}")))))
 
 (def ^:private base-specs [cli/cli-help])
 (def ^:private cli-snapshot [nil "--snapshot" "Append -SNAPSHOT to the version"])
