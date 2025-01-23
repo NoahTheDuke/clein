@@ -6,7 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
-## 0.4.0 - 2025-01-22
+- Fix `uberjar` command.
+
+## 0.4.0
+
+Released on 2025-01-22.
 
 - Add `export` command to create a `build.clj` file that mirrors the `:clein/build` config.
 - Support `{{git-count-revs}}` in version file.

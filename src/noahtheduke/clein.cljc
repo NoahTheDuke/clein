@@ -84,7 +84,8 @@
         (assoc $ :jar-file (str (io/file (:target-dir $) (:jar-name $))))
         (assoc $ :uberjar-name-raw (:uberjar-name $))
         (update $ :uberjar-name #(or % (format "%s-%s-standalone.jar" (name (:lib $)) (:version $))))
-        (assoc $ :uberjar-file (str (io/file (:target-dir $) (:uberjar-name $))))))))
+        (assoc $ :uberjar-file (str (io/file (:target-dir $) (:uberjar-name $))))
+        (assoc $ :uber-file (:uberjar-file $))))))
 
 (defn clean [opts]
   (b/delete {:path (:class-dir opts)}))
