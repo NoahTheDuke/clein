@@ -58,11 +58,11 @@ details all possible options with their defaults:
 
    ; :version is required
    ; Must be either a string, or a path string that resolves to a file.
-   ; If given a string, it can contain the string "{{git-count-revs}}"
-   ; to use the result of `b/git-count-revs`. No other template strings work.
+   ; It can contain the string "{{git-count-revs}}" to use the result of
+   ; `b/git-count-revs`. No other template strings work.
    :version "1.0.0"
    ; :version "1.0.{{git-count-revs}}"
-   ; :version "resources/CLEIN_VERSION".
+   ; :version "resources/CLEIN_VERSION" (contents: "1.0.0" or "1.0.{{git-count-revs}}")
 
    ; :license OR :pom-data are required, but not both.
 

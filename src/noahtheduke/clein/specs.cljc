@@ -12,8 +12,9 @@
 (s/def :v/file #(when (string? %)
                   (let [f (io/file %)]
                     (and (.exists f) (.isFile f)))))
-(s/def ::version (s/or :f :v/file :s :v/string))
+(s/def ::version (s/or :file :v/file :string :v/string))
 
+;; spec'd as optional but required in assertions
 (s/def :l/name string?)
 (s/def :l/url string?)
 (s/def :l/distribution #{:repo :manual})
