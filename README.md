@@ -18,8 +18,7 @@ Run with `clojure -M:clein [...]`.
 
 ### Babashka
 
-Either copy `src/noahtheduke/clein.cljc` to a folder on your $PATH and `chmod +x` it, or
-use [bbin](https://github.com/babashka/bbin) to install it.
+Either copy `src/noahtheduke/clein.cljc` to a folder on your $PATH and `chmod +x` it, or use [bbin](https://github.com/babashka/bbin) to install it.
 
 ## How to use
 
@@ -45,8 +44,9 @@ Commands:
 
 ## How to configure
 
-Add the alias `:clein/build` with the clein-specific configuration. The example below
-details all possible options with their defaults:
+Add the alias `:clein/build` with the clein-specific configuration. The option keys are named for their tools.build usage, not their Leiningen counterparts. I chose this to make it easier to search for and understand
+
+The example below details all possible options with their defaults:
 
 ```clojure
 {:aliases
@@ -113,19 +113,10 @@ details all possible options with their defaults:
          :tag "v1.0.0"}}}}
 ```
 
-Additionally, if there is a `:provided` alias with `:extra-deps`, it will be included in
-the generated `pom.xml` with `<scope>provided</scope>` when building the uberjar, and
-deploying. This allows specifying `:extra-deps` that users must include themselves,
-generally for optional dependencies.
+Additionally, if there is a `:provided` alias with `:extra-deps`, it will be included in the generated `pom.xml` with `<scope>provided</scope>` when building the uberjar, and deploying. This allows specifying `:extra-deps` that users must include themselves, generally for optional dependencies.
 
 ## Rationale
 
-I hate copy-pasting my nearly identical build.clj files from one project to the next.
-The Clojure team might be right that builds should be treated as code because otherwise
-you have adhoc DSLs. But on the other hand, most projects just aren't that complicated
-and can be handled with a few light decisions. Leiningen got this right, making the
-simple case dead simple. Leiningen failed once projects got more complex.
+I hate copy-pasting my nearly identical build.clj files from one project to the next. The Clojure team might be right that builds should be treated as code because otherwise you have adhoc DSLs. But on the other hand, most projects just aren't that complicated and can be handled with a few light decisions. Leiningen got this right, making the simple case dead simple. Leiningen failed once projects got more complex.
 
-Surrounded by a graveyard of other `tools.build` libraries and tools, I have decided to
-try my hand. This is a very simple wrapper around tools.build that moves the
-configuration from a build.clj file to a `deps.edn` alias.
+Surrounded by a graveyard of other `tools.build` libraries and tools, I have decided to try my hand. This is a very simple wrapper around tools.build that moves the configuration from a build.clj file to a `deps.edn` alias.
