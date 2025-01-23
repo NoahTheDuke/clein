@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Add `export` command to create a `build.clj` file that mirrors the `:clein/build` config.
+- Support `{{git-count-revs}}` in version file.
+- Relax `:pom-data` to be usable alongside `:license`, as long as it doesn't define `[:licenses]`.
+- Note the Leiningen keys in README where there's a difference.
+- Internal reorganization.
+- Add `noahtheduke.clein.cli` as cli extension namespace. (Consider moving this to a separate library.)
+
 ## 0.3.1
 
 Released on 2024-12-02.
