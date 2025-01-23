@@ -67,7 +67,7 @@
         (update $ :src-dirs #(or (not-empty %) (:paths (:basis $))))
         (update $ :resource-dirs not-empty)
         (update $ :java-src-dirs not-empty)
-        (update $ :javac-options not-empty)
+        (update $ :javac-opts not-empty)
         (update $ :target-dir #(or % "target"))
         (assoc $ :class-dir (str (io/file (:target-dir $) "classes")))
         (update $ :scm #(merge {:url (:url $)
