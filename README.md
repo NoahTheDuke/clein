@@ -40,6 +40,7 @@ Commands:
   uberjar  Built the uberjar
   deploy   Build and deploy jar to Clojars
   install  Build and install jar to local Maven repo
+  export   Create a build.clj matching the existing :clein/build config
 ```
 
 ## How to configure
