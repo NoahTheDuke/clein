@@ -44,7 +44,7 @@ Commands:
 
 ## How to configure
 
-Add the alias `:clein/build` with the clein-specific configuration. The option keys are named for their tools.build usage, not their Leiningen counterparts. I chose this to make it easier to search for and understand
+Add the alias `:clein/build` with the clein-specific configuration. The option keys are named to mirror tools.build, not their Leiningen counterparts. I chose this to make it easier to search for and understand the options present. I've noted the Leiningen keys where appropriate to make transitioning easier.
 
 The example below details all possible options with their defaults:
 
@@ -82,25 +82,35 @@ The example below details all possible options with their defaults:
 
    ; :src-dirs is optional but STRONGLY RECOMMENDED
    ; If not included, defaults to :paths in deps.edn.
+   ;
+   ; :source-paths in Leiningen
    :src-dirs ["src/clojure"]
 
    ; :resource-dirs is optional but STRONGLY RECOMMENDED
+   ;
+   ; :resource-paths in Leiningen
    :resource-dirs ["resources"]
 
    ; :java-src-dirs is optional
    ; If not included, defaults to nil and no java compilation will happen.
    ; If included, the given directories will be compiled before jars are created.
    ; Java classes are compiled into :target/classes as below.
+   ;
+   ; :java-source-paths in Leiningen
    :java-src-dirs ["src/java"]
 
    ; :javac-opts is optional
    ; If included, it will be passed to b/javac as-is.
+   ;
+   ; :javac-options in Leiningen
    :javac-opts ["--release" "11"]
 
    ; :target-dir is optional
    ; If not included, defaults to "target".
    ; Classes are compiled into :target-dir/classes, and jar and uberjar are built in
    ; :target-dir/:jar-name and :target-dir/:uberjar-name, respectively.
+   ;
+   ; :target-path in Leiningen
    :target-dir "target"
 
    :jar-name "clein.jar" ; optional, default (format "%s-%s.jar" (name lib) version)
