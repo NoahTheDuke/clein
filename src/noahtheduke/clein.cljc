@@ -243,7 +243,7 @@
    ["jar" "Build the jar"
     :action create-jar
     :opts [cli-snapshot]]
-   ["uberjar" "Built the uberjar"
+   ["uberjar" "Build the uberjar"
     :action create-uberjar
     :opts [cli-snapshot]]
    ["deploy" "Build and deploy jar to Clojars"

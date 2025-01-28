@@ -11,7 +11,7 @@ In your `deps.edn`, add this library to a new alias such as `:clein`:
 ```clojure
 {:aliases
  {:clein {:deps {io.github.noahtheduke/clein {:mvn/version "LATEST"}}
-          :main-opts ["-m" "noahtheduke.clein"]}}
+          :main-opts ["-m" "noahtheduke.clein"]}}}
 ```
 
 Run with `clojure -M:clein [...]`.
@@ -24,7 +24,7 @@ Either copy `src/noahtheduke/clein.cljc` to a folder on your $PATH and `chmod +x
 
 Using the above alias:
 
-```
+```shell
 $ clojure -M:clein --help
 clein v0.4.1
 Usage: clein [options] command [args...]
@@ -37,7 +37,7 @@ Commands:
   clean    Clean the target directory
   pom      Create just the pom.xml
   jar      Build the jar
-  uberjar  Built the uberjar
+  uberjar  Build the uberjar
   deploy   Build and deploy jar to Clojars
   install  Build and install jar to local Maven repo
   export   Create a build.clj matching the existing :clein/build config
