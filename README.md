@@ -135,3 +135,9 @@ Additionally, if there is a `:provided` alias with `:extra-deps`, it will be inc
 I hate copy-pasting my nearly identical build.clj files from one project to the next. The Clojure team might be right that builds should be treated as code because otherwise you have adhoc DSLs. But on the other hand, most projects just aren't that complicated and can be handled with a few light decisions. Leiningen got this right, making the simple case dead simple. Leiningen failed once projects got more complex.
 
 Surrounded by a graveyard of other `tools.build` libraries and tools, I have decided to try my hand. This is a very simple wrapper around tools.build that moves the configuration from a build.clj file to a `deps.edn` alias.
+
+## License
+
+Copyright © Noah Bogart
+
+Distributed under the Mozilla Public License version 2.0.
