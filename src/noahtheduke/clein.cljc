@@ -127,7 +127,7 @@
   (copy-src opts)
   (println "Compiling" (:lib opts))
   (compile-java opts)
-  (b/compile-clj opts)
+  (b/compile-clj (assoc opts :basis (:provided opts)))
   (pom/write-pom opts)
   (b/uber opts)
   (println "Created" (str (b/resolve-path (:jar-file opts)))))
@@ -190,10 +190,8 @@
          "  (println \"Compiling\" (str/join \", \" (:java-src-dirs opts)))"
          "  (b/javac {:src-dirs (:java-src-dirs opts)"
          "            :class-dir (:class-dir opts)"
-         (str "            :basis (:basis opts)"
-              (when (:javac-opts opts)
-                "\n            :javac-opts {{javac-opts}}")
-              "}))")
+         "            :basis (:basis opts)"
+         "            :javac-opts (:javac-opts opts)}))"
          ""]
         (->> (str/join "\n")))))
 
@@ -226,6 +224,7 @@
       (println "Exported to build.clj")
       (println "Add the alias below to your deps.edn to use:\n")
       (println (str ":build {:deps {io.github.clojure/tools.build {:mvn/version \"0.10.6\"}\n"
+                    "               io.github.noahtheduke/clein {:mvn/version \"0.4.1\"}}\n"
                     "               slipset/deps-deploy {:mvn/version \"0.2.1\"}}\n"
                     "        :ns-default build}")))))
 

@@ -3,6 +3,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.tools.build.api :as b]
+   [noahtheduke.clein.pom-data :as clein.pom]
    [deps-deploy.deps-deploy :as dd]))
 {{version-defn}}
 (defn make-opts [opts]
@@ -11,14 +12,18 @@
     (assoc opts
       :lib lib
       :version version
+      :scm {{scm}}
       :main '{{main}}
       :basis (b/create-basis {:project "deps.edn"})
+      :provided (b/create-basis {:project "deps.edn"
+                                 :aliases [:provided]})
       :class-dir "{{class-dir}}"
       :jar-file {{jar-file}}
       :uber-file {{uberjar-file}}
       :src-dirs {{src-dirs|safe}}
       :resource-dirs {{resource-dirs|safe}}
 {% if java-src-dirs %}      :java-src-dirs {{java-src-dirs|safe}}
+{% endif %}{% if javac-opts %}      :javac-opts {{javac-opts|safe}}
 {% endif %}      :pom-data {{pom-data|safe}})))
 
 (defn clean [opts]
@@ -29,20 +34,28 @@
   (let [opts (make-opts opts)]
     (b/copy-dir {:src-dirs (concat (:src-dirs opts) (:resource-dirs opts))
                  :target-dir (:class-dir opts)})))
-
+{{javac-defn}}
 (defn jar [opts]
   (let [opts (make-opts opts)]
     (clean opts)
     (copy-src opts)
-    (b/jar opts)
+{% if javac-call %}    {{javac-call}}
+{% endif %}    (b/jar opts)
     (println "Created" (str (b/resolve-path (:jar-file opts))))))
-{{javac-defn}}
+
+(defn write-pom
+  [opts]
+  (let [pom-path (b/pom-path opts)
+        opts (assoc opts :pom-path pom-path)]
+    (clein.pom/write-pom opts)))
+
 (defn uberjar [opts]
   (let [opts (make-opts opts)]
     (clean opts)
     (copy-src opts)
 {% if javac-call %}    {{javac-call}}
-{% endif %}    (b/write-pom opts)
+{% endif %}    (write-pom opts)
+    (b/compile-clj (assoc opts :basis (:provided opts)))
     (b/uber opts)
     (println "Created" (str (b/resolve-path (:jar-file opts))))))
 
@@ -50,7 +63,8 @@
   (let [opts (make-opts opts)]
     (clean opts)
     (copy-src opts)
-    (b/write-pom opts)
+{% if javac-call %}    {{javac-call}}
+{% endif %}    (write-pom opts)
     (b/jar opts)
     (dd/deploy {:installer :remote
                 :artifact (b/resolve-path (:jar-file opts))

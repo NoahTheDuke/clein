@@ -187,4 +187,3 @@
        :options (merge (:options opts) (:options command))
        :args (:args command)}
       :else (base-help-message (:specs opts) (:all-specs command)))))
-
