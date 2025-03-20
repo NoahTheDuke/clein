@@ -219,6 +219,7 @@
             (assoc $ :javac-defn (make-javac-defn $))
             (assoc $ :javac-call (when (:javac-defn $)
                                    "(compile-java opts)"))
+            (assoc $ :url (-> $ :scm :url pr-str))
             (update $ :javac-opts #(or % "nil")))]
       (spit "build.clj" (selmer/render-file "clein/build-clj.tmpl" render-opts))
       (println "Exported to build.clj")

@@ -12,7 +12,8 @@
     (assoc opts
       :lib lib
       :version version
-      :scm {{scm}}
+      :scm {:url {{url}}
+            :tag (str "v" version)}
       :main '{{main}}
       :basis (b/create-basis {:project "deps.edn"})
       :provided (b/create-basis {:project "deps.edn"
