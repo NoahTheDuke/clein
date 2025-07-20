@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.5.0
+
+Released on 2025-07-20.
+
 - Fix compile-clj calls when `:provided` alias exists.
 - Clean up `export` template to call `compile-clj` in uberjar path, compile java in deploy, include `:scm`/`:provided`/`:javac-opts` in opts, and use clein's `write-pom` where appropriate.
 

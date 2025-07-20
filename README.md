@@ -26,7 +26,7 @@ Using the above alias:
 
 ```shell
 $ clojure -M:clein --help
-clein v0.4.1
+clein v0.5.0
 Usage: clein [options] command [args...]
 
 Options:
