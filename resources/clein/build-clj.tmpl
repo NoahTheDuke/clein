@@ -8,24 +8,24 @@
 {{version-defn}}
 (defn make-opts [opts]
   (let [lib '{{lib}}
-       opts (assoc opts
-              :lib lib
-              :version version
-              :scm {:url {{url}}
-              :tag (str "v" version)}
-              :main '{{main}}
-              :basis (b/create-basis {:project "deps.edn"})
-              :provided (b/create-basis {:project "deps.edn"
-                                         :aliases [:provided]})
-              :class-dir "{{class-dir}}"
-              :jar-file {{jar-file}}
-              :uber-file {{uberjar-file}}
-              :src-dirs {{src-dirs|safe}}
-              :resource-dirs {{resource-dirs|safe}}
+        version {{version-call}}
+        opts (assoc opts
+               :lib lib
+               :version version
+               :scm {:url {{url}}
+               :tag (str "v" version)}
+               :main '{{main}}
+               :basis (b/create-basis {:project "deps.edn"})
+               :provided (b/create-basis {:project "deps.edn"
+                                          :aliases [:provided]})
+               :class-dir "{{class-dir}}"
+               :jar-file {{jar-file}}
+               :uber-file {{uberjar-file}}
+               :src-dirs {{src-dirs|safe}}
+               :resource-dirs {{resource-dirs|safe}}
 {% if java-src-dirs %}              :java-src-dirs {{java-src-dirs|safe}}
 {% endif %}{% if javac-opts %}              :javac-opts {{javac-opts|safe}}
-{% endif %}              :pom-data {{pom-data|safe}})]
-    (assoc opts :version {{version-call}})))
+{% endif %}              :pom-data {{pom-data|safe}})]))
 
 (defn clean [opts]
   (let [opts (make-opts opts)]
