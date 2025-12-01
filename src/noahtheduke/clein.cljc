@@ -225,7 +225,7 @@
       (println "Exported to build.clj")
       (println "Add the alias below to your deps.edn to use:\n")
       (println (str ":build {:deps {io.github.clojure/tools.build {:mvn/version \"0.10.6\"}\n"
-                    "               io.github.noahtheduke/clein {:mvn/version \"0.4.1\"}}\n"
+                    "               io.github.noahtheduke/clein {:mvn/version \"0.4.1\"}\n"
                     "               slipset/deps-deploy {:mvn/version \"0.2.1\"}}\n"
                     "        :ns-default build}")))))
 
