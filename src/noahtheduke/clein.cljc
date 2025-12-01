@@ -175,21 +175,21 @@
   (some->
    (case (key (:version-raw opts))
      :file   [""
-              "(defn make-version [_]"
+              "(defn make-version []"
               "  (-> (slurp {{version-raw}})"
               "      (str/trim)"
               "      (str/replace \"{{git-count-revs}}\" (b/git-count-revs nil))))"
               ""]
      :symbol [""
-              "(defn make-version [opts]"
-              "  ((requiring-resolve '{{version-raw}}) opts))"
+              "(defn make-version []"
+              "  ((requiring-resolve '{{version-raw}})))"
               ""])
    (->> (str/join "\n"))
    (str/replace "{{version-raw}}" (pr-str (val (:version-raw opts))))))
 
 (defn make-version-call [opts]
   (if (:version-defn opts)
-    "(make-version opts)"
+    "(make-version)"
     (let [[front back] (str/split (val (:version-raw opts)) #"\{\{git-count-revs}}")]
       (pr-str
        (if back
