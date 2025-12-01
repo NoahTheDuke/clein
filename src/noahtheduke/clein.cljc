@@ -46,7 +46,7 @@
 
 (defn clein-build-opts [options]
   (let [build-opts (:argmap (b/create-basis {:aliases [:clein/build]}))
-        conformed (s/conform ::specs/build-opts build-opts)]
+        conformed  (s/conform ::specs/build-opts build-opts)]
     (cond
       (not build-opts)
       (do (println "deps.edn alias :clein/build must exist")
@@ -62,11 +62,20 @@
         (assoc $ :provided (b/create-basis {:project "deps.edn"
                                             :aliases [:provided]}))
         (assoc $ :version-raw (:version $))
-        (update $ :version #(str (-> (if (= :string (key %))
-                                       (val %)
-                                       (slurp (val %)))
-                                     (str/trim)
-                                     (str/replace "{{git-count-revs}}" (b/git-count-revs nil)))
+        (update $ :version #(str (case (key %)
+                                       :string (-> (val %)
+                                                   (str/trim)
+                                                   (str/replace "{{git-count-revs}}" (b/git-count-revs nil)))
+                                       :symbol (if-let [f (requiring-resolve (val %))]
+                                                 (f)
+                                                 (throw
+                                                  (ex-info
+                                                   (str "Error reading :version - could not resolve symbol: "
+                                                        (val %))
+                                                   {:symbol (val %)})))
+                                       :file   (-> (slurp (val %))
+                                                   (str/trim)
+                                                   (str/replace "{{git-count-revs}}" (b/git-count-revs nil))))
                                  (when (:snapshot options)
                                    "-SNAPSHOT")))
         (update $ :src-dirs #(or (not-empty %) (:paths (:basis $))))
@@ -163,19 +172,24 @@
   (println "Installed" (:jar-name opts)))
 
 (defn make-version-defn [opts]
-  (when (= :file (key (:version-raw opts)))
-    (-> [""
-         "(defn make-version []"
-         "  (-> (slurp {{file}})"
-         "      (str/trim)"
-         "      (str/replace \"{{git-count-revs}}\" (b/git-count-revs nil))))"
-         ""]
-        (->> (str/join "\n"))
-        (str/replace "{{file}}" (pr-str (val (:version-raw opts)))))))
+  (some->
+   (case (key (:version-raw opts))
+     :file   [""
+              "(defn make-version [_]"
+              "  (-> (slurp {{version-raw}})"
+              "      (str/trim)"
+              "      (str/replace \"{{git-count-revs}}\" (b/git-count-revs nil))))"
+              ""]
+     :symbol [""
+              "(defn make-version [opts]"
+              "  ((requiring-resolve '{{version-raw}}) opts))"
+              ""])
+   (->> (str/join "\n"))
+   (str/replace "{{version-raw}}" (pr-str (val (:version-raw opts))))))
 
 (defn make-version-call [opts]
   (if (:version-defn opts)
-    "(make-version)"
+    "(make-version opts)"
     (let [[front back] (str/split (val (:version-raw opts)) #"\{\{git-count-revs}}")]
       (pr-str
        (if back
