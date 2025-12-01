@@ -57,13 +57,25 @@ The example below details all possible options with their defaults:
    :main noahtheduke.clein ; required
    :url "https://github.com/noahtheduke/clein" ; required
 
-   ; :version is required
-   ; Must be either a string, or a path string that resolves to a file.
-   ; It can contain the string "{{git-count-revs}}" to use the result of
-   ; `b/git-count-revs`. No other template strings work.
-   :version "1.0.0"
+   ; :version is required. There are three ways to pass :version -
+   ;
+   ; 1) A :version string:
+   :verson "1.0.0"
+   ;
+   ; Within the string, you may include the substring `{{git-count-revs}}`.
+   ; At build time, Clein will substitute this template string
+   ; with the result of `b/git-count-revs` (a number). No other template strings work.
    ; :version "1.0.{{git-count-revs}}"
+   ;
+   ; 2) A path string that resolves to a file. You can also include the `{{git-count-revs}}`
+   ; template-string within the file's content:
    ; :version "resources/CLEIN_VERSION" (contents: "1.0.0" or "1.0.{{git-count-revs}}")
+   ;
+   ; 3) A qualified symbol, which returns a version string when called.
+   ; Note: clein's `export` might yield broken code if your symbol comes from an external dep.
+   ; To fix, add your dep within the newly generated `:build` alias:
+   ; `:build {:deps {my/dev-tools {...} ...} ...}`
+   ; :version my.dev-tools/get-latest-version!
 
    ; :license OR :pom-data are required.
    ; Both can be provided as long as :pom-data does not contain [:licenses].

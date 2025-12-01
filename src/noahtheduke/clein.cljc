@@ -241,7 +241,9 @@
       (println (str ":build {:deps {io.github.clojure/tools.build {:mvn/version \"0.10.6\"}\n"
                     "               io.github.noahtheduke/clein {:mvn/version \"0.4.1\"}\n"
                     "               slipset/deps-deploy {:mvn/version \"0.2.1\"}}\n"
-                    "        :ns-default build}")))))
+                    "        :ns-default build}"))
+      (println)
+      (println "(add your own deps as needed)"))))
 
 (def ^:private base-specs [cli/cli-help])
 (def ^:private cli-snapshot [nil "--snapshot" "Append -SNAPSHOT to the version"])
