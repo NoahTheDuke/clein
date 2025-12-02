@@ -9,10 +9,11 @@
 (s/def ::url string?)
 
 (s/def :v/string string?)
+(s/def :v/symbol qualified-symbol?)
 (s/def :v/file #(when (string? %)
                   (let [f (io/file %)]
                     (and (.exists f) (.isFile f)))))
-(s/def ::version (s/or :file :v/file :string :v/string))
+(s/def ::version (s/or :symbol :v/symbol :file :v/file :string :v/string))
 
 ;; spec'd as optional but required in assertions
 (s/def :l/name string?)
