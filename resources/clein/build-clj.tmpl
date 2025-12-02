@@ -23,9 +23,9 @@
            :uber-file {{uberjar-file}}
            :src-dirs {{src-dirs|safe}}
            :resource-dirs {{resource-dirs|safe}}
-           {% if java-src-dirs %}           :java-src-dirs {{java-src-dirs|safe}}
-           {% endif %}{% if javac-opts %}           :javac-opts {{javac-opts|safe}}
-           {% endif %}           :pom-data {{pom-data|safe}})))
+{% if java-src-dirs %}           :java-src-dirs {{java-src-dirs|safe}}
+{% endif %}{% if javac-opts %}           :javac-opts {{javac-opts|safe}}
+{% endif %}           :pom-data {{pom-data|safe}})))
 
 (defn clean [opts]
   (let [opts (make-opts opts)]
